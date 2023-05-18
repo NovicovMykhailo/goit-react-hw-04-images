@@ -1,4 +1,3 @@
-import { Component } from 'react';
 import css from './App.module.css';
 import Searchbar from './Searchbar/Searchbar';
 import Loader from './Loader/Loader';
@@ -6,111 +5,95 @@ import Modal from './Modal/Modal';
 import { fetchByName, pagination } from '../services/pixabay-api';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
+import { useState, useEffect } from 'react';
+import Error from './Error/Error';
 
-export class App extends Component {
-  state = {
-    foundImages: null,
-    searchItem: '',
-    showModal: false,
-    showLoader: false,
-    nextPage: 1,
-    largerImage: null,
-    alt: null,
-    error: null,
-    status: 'idle',
-    showButton: true,
-    total: 0,
-  };
+export default function App() {
+  const [foundImages, setFoundImages] = useState(null);
+  const [searchItem, setSearchItem] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+  const [largerImage, setLargerImage] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [alt, setAlt] = useState(null);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('idle');
+  const [nextPage, setNextPage] = useState(1);
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevSearch = prevState.searchItem;
-    const nextSearch = this.state.searchItem;
-
-    if (prevSearch !== nextSearch) {
-      this.setState({ status: 'pending', nextPage: 2 });
-
-      fetchByName(nextSearch)
+  useEffect(() => {
+    if (searchItem !== '') {
+      setStatus('pending');
+      setNextPage(2);
+      fetchByName(searchItem)
         .then(foundImages => {
           if (foundImages.total !== 0) {
-            this.setState({
-              foundImages: foundImages.hits,
-              status: 'resolved',
-              error: null,
-              total: foundImages.total,
-              showButton: true,
-            });
+            setFoundImages(foundImages.hits);
+            setStatus('resolved');
+            setError(null);
+            setTotal(foundImages.total);
+            if (foundImages.hits.length !== 1) {
+              setShowButton(true);
+            }
           } else {
-            this.setState({
-              status: 'rejected',
-              error: new Error(`Cannot find photos for ${nextSearch} category`),
-            });
+            setStatus('rejected');
+            setError(new Error(`Cannot find photos for ${searchItem} category`));
           }
         })
-        .catch(error => this.setState({ error, status: 'rejected' }));
+        .catch(error => {
+          setError(error);
+          setStatus('rejected');
+        });
     }
-  }
+  }, [searchItem]);
 
-
-  setSearchItem = data => {
-    this.setState({ searchItem: data });
+  const setSearchItemEl = data => {
+    setSearchItem(data);
   };
 
-  toggleModal = () => {
-    const { showModal } = this.state;
-    this.setState({ showModal: !showModal });
+  const toggleModal = () => {
+    setShowModal(prev => !prev);
   };
 
-  modalImage = ({ alt, largerImage }) => {
-    this.setState({
-      largerImage: largerImage,
-      alt: alt,
-    });
+  const modalImage = ({ alt, largerImage }) => {
+    setLargerImage(largerImage);
+    setAlt(alt);
   };
 
-  onLoadMore = () => {
-    const { searchItem, nextPage } = this.state;
-
+  const onLoadMore = () => {
     pagination(searchItem, nextPage)
       .then(newImages => {
-        this.setState(({ foundImages, nextPage }) => ({
-          foundImages: [...foundImages, ...newImages.hits],
-          status: 'resolved',
-          nextPage: nextPage + 1,
-        }));
-        if (this.state.foundImages.length + 12 >= this.state.total) {
-          this.setState({ showButton: false });
+        setFoundImages(prev => [...prev, ...newImages.hits]);
+        setStatus('resolved');
+        setNextPage(prev => prev + 1);
+        console.log(newImages.hits.length);
+        if (foundImages.length + 12 >= total) {
+          setShowButton(false);
         }
       })
-      .catch(error => this.setState({ error, status: 'rejected' }));
+      .catch(error => {
+        setError(error);
+        setStatus('rejected');
+      });
   };
 
-  render() {
-    const { showModal, foundImages, largerImage, alt, error, status, showButton } =
-      this.state;
-    return (
-      <div className={css.app}>
-        <Searchbar onSubmit={this.setSearchItem} />
-        {status === 'pending' && <Loader />}
-        {status === 'resolved' && (
-          <ImageGallery
-            images={foundImages}
-            openModal={this.toggleModal}
-            modalImage={this.modalImage}
-          />
-        )}
-        {status === 'rejected' && (
-          <div className={css.error}>
-            <h1>{error.message}</h1>
-          </div>
-        )}
-        {status === 'resolved' && showButton && <Button onClick={this.onLoadMore} />}
-        {showModal && (
-          <Modal
-            onClose={this.toggleModal}
-            children={<img src={largerImage} alt={alt} />}
-          />
-        )}
-      </div>
-    );
-  }
+  return (
+    <div className={css.app}>
+      <Searchbar onSubmit={setSearchItemEl} />
+      {status === 'pending' && <Loader />}
+      {status === 'resolved' && (
+        <ImageGallery
+          images={foundImages}
+          openModal={toggleModal}
+          modalImage={modalImage}
+        />
+      )}
+      {status === 'rejected' && <Error error={error.message} />}
+      {status === 'resolved' && showButton && <Button onClick={onLoadMore} />}
+      {showModal && (
+        <Modal onClose={toggleModal}>
+          <img src={largerImage} alt={alt} />
+        </Modal>
+      )}
+    </div>
+  );
 }
