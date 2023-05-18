@@ -1,42 +1,29 @@
-import { Component } from 'react';
 import ImageGalleyItem from 'components/ImageGalleryItem/ImageGalleyItem';
 import css from './ImageGallery.module.css';
-import PropTypes from 'prop-types'
+import PropTypes from 'prop-types';
 
+export default function ImageGallery({ images, openModal, modalImage }) {
 
-
-export default class ImageGallery extends Component {
-  state = {
-    gallery: [],
+  const onClick = ({ largerImage, alt }) => {
+    modalImage({ largerImage, alt });
+    openModal();
   };
 
-  onClick = ({ largerImage, alt }) => {
-    this.props.modalImage({
-      largerImage: largerImage,
-      alt: alt,
-    });
-    this.props.openModal();
-  };
-
-  render() {
-    const { images } = this.props;
-
-    return (
-      <ul className={css.ImageGallery}>
-        {images.map(image => {
-          return (
-            <ImageGalleyItem
-              onClick={this.onClick}
-              key={image.id}
-              src={image.webformatURL}
-              alt={image.tags}
-              largerImage={image.largeImageURL}
-            />
-          );
-        })}
-      </ul>
-    );
-  }
+  return (
+    <ul className={css.ImageGallery}>
+      {images.map(image => {
+        return (
+          <ImageGalleyItem
+            onClick={onClick}
+            key={image.id}
+            src={image.webformatURL}
+            alt={image.tags}
+            largerImage={image.largeImageURL}
+          />
+        );
+      })}
+    </ul>
+  );
 }
 
 ImageGallery.propTypes = {

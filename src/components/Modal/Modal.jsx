@@ -1,37 +1,36 @@
-import { PureComponent } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import css from './Modal.module.css';
 
-export default class Modal extends PureComponent {
-  modalRoot = document.querySelector('#modal-root');
+export default function Modal({ onClose, children }) {
+  const modalRoot = document.querySelector('#modal-root');
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.closeOnEsc);
-  }
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.closeOnEsc);
-  }
+  useEffect(() => {
+    window.addEventListener('keydown', closeOnEsc);
+    return () => {
+      window.removeEventListener('keydown', closeOnEsc);
+    };
+  });
 
-  closeOnEsc = e => {
+  const closeOnEsc = e => {
     if (e.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
-  onClickClose = e => {
-    if (e.currentTarget === e.target) {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  render() {
-    return createPortal(
-      <div className={css.Overlay} onClick={this.onClickClose}>
-        <div className={css.Modal}>{this.props.children}</div>
-      </div>,
-      this.modalRoot
-    );
-  }
+  const onClickClose = e => {
+    if (e.currentTarget === e.target) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div className={css.Overlay} onClick={onClickClose}>
+      <div className={css.Modal}>{children}</div>
+    </div>,
+    modalRoot
+  );
 }
 
 Modal.propTypes = {
