@@ -4,7 +4,7 @@ const URL = 'https://pixabay.com/api/?';
 
 const options = new URLSearchParams([
   ['orientation', 'horizontal'],
-  ['safesearch', 'true'],
+  ['safesearch', 'false'],
   ['per_page', 12],
   ['image_type', 'photo'],
 ]);
